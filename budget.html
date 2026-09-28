@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Budget">
+<meta name="theme-color" content="#12131A">
+<title>Budget</title>
+<style>
+  html{ overscroll-behavior-y: none; }
+  body{ overscroll-behavior-y: none; }
+  :root{
+    --bg:#FFFFFF; --panel:#F6F7FB; --card:#FFFFFF;
+    --ink:#12131A; --muted:#8B8FA3; --line:#EEEFF4;
+    --iris:#5B5FEF; --iris-soft:#EEEDFD;
+    --mint:#1FAE85; --amber:#F5A623;
+    --coral:#FF6B5D; --coral-soft:#FFEEEC;
+    --shadow:0 2px 10px rgba(18,19,26,0.05), 0 1px 2px rgba(18,19,26,0.04);
+    --shadow-lg:0 12px 32px rgba(18,19,26,0.08);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--panel);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    font-feature-settings:'tnum' 1;-webkit-font-smoothing:antialiased;min-height:100vh;
+  }
+  .app{max-width:460px;margin:0 auto;padding:0 0 calc(100px + env(safe-area-inset-bottom));background:var(--bg);min-height:100vh;}
+  .topbar{padding:calc(28px + env(safe-area-inset-top)) 20px 6px;display:flex;justify-content:space-between;align-items:center;}
+  .topbar .greet{font-size:13px;color:var(--muted);font-weight:500;}
+  .topbar .greet strong{color:var(--ink);font-weight:700;}
+  .avatar{width:34px;height:34px;border-radius:999px;background:var(--iris);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;}
+  .maintabs{display:flex;gap:8px;margin:16px 20px 4px;}
+  .maintabs button{flex:1;border:none;background:var(--panel);color:var(--muted);font-weight:700;font-size:13px;padding:11px 6px;border-radius:14px;}
+  .maintabs button.active{background:var(--ink);color:#fff;}
+  .monthrow{display:flex;align-items:center;gap:10px;margin:14px 20px 6px;}
+  .monthrow label{font-size:11.5px;color:var(--muted);font-weight:600;}
+  .monthrow input[type=month]{font-size:13px;padding:8px 10px;border-radius:11px;border:1px solid var(--line);background:var(--panel);color:var(--ink);flex:none;font-family:inherit;}
+  .hero{margin:14px 20px 18px;padding:22px;border-radius:22px;color:#fff;box-shadow:var(--shadow-lg);}
+  .hero.exp{background:linear-gradient(150deg,#FF6B5D 0%,#FF8A70 55%,#FFA98A 100%);}
+  .hero.inc{background:linear-gradient(150deg,#1FAE85 0%,#2FC79B 55%,#5FDDB8 100%);}
+  .hero .label{font-size:12.5px;opacity:.9;font-weight:600;margin-bottom:6px;}
+  .hero .total{font-size:32px;font-weight:800;letter-spacing:-0.02em;}
+  .hero .sub{margin-top:8px;font-size:12px;font-weight:600;opacity:.92;}
+  .card{background:var(--card);border-radius:20px;box-shadow:var(--shadow);margin:0 20px 18px;padding:18px 18px 6px;}
+  .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 2px;}
+  .card-head h2{font-size:15px;font-weight:700;margin:0;}
+  .card-head .hint{font-size:11px;color:var(--muted);font-weight:500;margin-top:2px;}
+  .pill-btn{border:none;background:var(--iris-soft);color:var(--iris);font-weight:700;font-size:12px;padding:7px 13px;border-radius:999px;}
+  .cat-card{padding:14px 2px;border-bottom:1px solid var(--line);}
+  .cat-card:last-child{border-bottom:none;}
+  .cat-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .cat-icon{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex:none;}
+  .cat-name{font-size:13.5px;font-weight:700;flex:1;}
+  .cat-figs{font-size:12px;color:var(--muted);text-align:right;}
+  .cat-figs strong{color:var(--ink);font-size:13px;}
+  .bar-track{height:8px;background:var(--panel);border-radius:999px;overflow:hidden;margin:6px 0 4px;}
+  .bar-fill{height:100%;border-radius:999px;}
+  .bar-fill.ok{background:var(--mint);} .bar-fill.warn{background:var(--amber);} .bar-fill.over{background:var(--coral);}
+  .cat-note{font-size:11px;color:var(--muted);}
+  .cat-note.over{color:var(--coral);font-weight:600;}
+  .cat-actions{display:flex;align-items:center;gap:10px;margin-top:9px;}
+  .budget-inline{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);font-weight:600;}
+  .budget-inline input{width:64px;font-size:12.5px;padding:5px 7px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;}
+  .cat-del{margin-left:auto;border:none;background:var(--panel);color:var(--muted);font-weight:700;font-size:11.5px;padding:6px 10px;border-radius:9px;}
+  .cat-del.confirming{background:var(--coral);color:#fff;}
+  .empty-note{color:var(--muted);font-size:13px;padding:16px 2px;}
+  .addbox{padding:12px 2px 18px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+  select,input[type=text],input[type=number],input[type=month],textarea{
+    width:100%;font-size:13.5px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);
+    background:var(--panel);color:var(--ink);font-family:inherit;
+  }
+  select:focus,input:focus,textarea:focus{outline:2px solid var(--iris-soft);border-color:var(--iris);}
+  .row2{display:flex;gap:10px;} .row2 .field{flex:1;}
+  .row3{display:flex;gap:10px;} .row3 .field{flex:1;}
+  .solid-btn{width:100%;border:none;background:var(--ink);color:#fff;font-weight:700;font-size:13.5px;padding:12px;border-radius:13px;margin-top:2px;}
+  .msg{font-size:11.5px;margin-top:8px;min-height:14px;font-weight:600;}
+  .msg.ok{color:var(--mint);} .msg.err{color:var(--coral);}
+  .txn-row{display:flex;align-items:center;gap:8px;padding:10px 2px;border-bottom:1px solid var(--line);font-size:13px;}
+  .txn-row:last-child{border-bottom:none;}
+  .txn-row select.cat-reassign{width:auto;flex:none;max-width:104px;font-size:11px;padding:5px 6px;border-radius:8px;font-weight:700;color:#fff;border:none;}
+  .txn-row .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .txn-row .amt{font-weight:700;flex:none;}
+  .txn-row .del{border:none;background:var(--panel);color:var(--muted);font-size:13px;font-weight:700;padding:5px 9px;border-radius:8px;flex:none;}
+  .txn-row .del.confirming{background:var(--coral);color:#fff;}
+  .rec-row{display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:12.5px;}
+  .rec-row:last-child{border-bottom:none;}
+  .rec-row .lbl{flex:1;font-weight:600;}
+  .rec-row .freq{font-size:10.5px;color:var(--muted);background:var(--panel);padding:3px 8px;border-radius:999px;flex:none;}
+  .rec-row .amt{font-weight:700;flex:none;}
+  .rec-row .del{border:none;background:var(--panel);color:var(--muted);font-size:12px;font-weight:700;padding:5px 8px;border-radius:8px;flex:none;}
+  .rec-row .del.confirming{background:var(--coral);color:#fff;}
+  .donut-wrap{display:flex;align-items:center;gap:18px;padding:6px 2px 14px;flex-wrap:wrap;}
+  .donut{width:130px;height:130px;border-radius:50%;flex:none;position:relative;}
+  .donut::after{content:'';position:absolute;inset:20px;background:var(--card);border-radius:50%;}
+  .legend{flex:1;min-width:140px;display:flex;flex-direction:column;gap:6px;}
+  .legend-row{display:flex;align-items:center;gap:8px;font-size:12px;}
+  .legend-dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .legend-row .lname{flex:1;color:var(--ink);font-weight:500;}
+  .legend-row .lval{color:var(--muted);font-weight:600;}
+  .barchart{display:flex;align-items:flex-end;gap:8px;height:120px;padding:6px 2px 4px;}
+  .barchart .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
+  .barchart .bar{width:100%;max-width:26px;background:var(--mint);border-radius:6px 6px 2px 2px;}
+  .barchart .colabel{font-size:10px;color:var(--muted);margin-top:6px;font-weight:600;}
+  footer{padding:16px 22px 10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  footer span{font-size:11px;color:var(--muted);}
+  footer button{background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;font-family:inherit;}
+  footer button.confirming{color:var(--coral);font-weight:700;text-decoration:none;}
+  .hidden{display:none !important;}
+  button{cursor:pointer;font-family:inherit;}
+  .backup-actions{display:flex;gap:10px;margin-top:8px;}
+  .backup-actions button{flex:1;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="greet">Budget de <strong>Lucas</strong></div>
+    <div class="avatar">L</div>
+  </div>
+
+  <div class="maintabs" id="mainTabs">
+    <button data-view="expenses" class="active">Dépenses</button>
+    <button data-view="income">Revenus</button>
+  </div>
+
+  <div class="monthrow">
+    <label>Mois</label>
+    <input type="month" id="monthPicker">
+  </div>
+
+  <div id="viewExpenses">
+    <div class="hero exp">
+      <div class="label">Dépensé ce mois-ci</div>
+      <div class="total" id="expTotal">—</div>
+      <div class="sub" id="expSub"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Catégories</h2><button class="pill-btn" id="btnToggleAddCat">+ Catégorie</button></div>
+      <div id="addCatBox" class="addbox hidden">
+        <div class="row2">
+          <div class="field"><label>Nom</label><input type="text" id="newCatName" placeholder="ex. Loisirs"></div>
+          <div class="field"><label>Budget mensuel (€)</label><input type="text" id="newCatBudget" placeholder="ex. 100"></div>
+        </div>
+        <button class="solid-btn" id="btnCreateCat">Créer la catégorie</button>
+        <div class="msg" id="addCatMsg"></div>
+      </div>
+      <div id="catList"></div>
+      <div class="empty-note hidden" id="noCatNote">Aucune catégorie — ajoute-en une pour commencer.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Ajouter une dépense</h2></div>
+      <div class="addbox" style="padding-top:2px;">
+        <div class="field"><label>Catégorie</label><select id="expCategory"></select></div>
+        <div class="row2">
+          <div class="field"><label>Libellé</label><input type="text" id="expLabel" placeholder="ex. Bar"></div>
+          <div class="field"><label>Montant (€)</label><input type="text" id="expAmount" placeholder="ex. 12,50"></div>
+        </div>
+        <button class="solid-btn" id="btnAddExpense">Enregistrer</button>
+        <div class="msg" id="expMsg"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Dépenses récurrentes</h2>
+      </div>
+      <div class="card-head" style="margin-top:-6px;"><div class="hint">Générées automatiquement chaque mois ou chaque semaine.</div></div>
+      <div class="addbox" style="padding-top:6px;">
+        <div class="row2">
+          <div class="field"><label>Libellé</label><input type="text" id="recExpLabel" placeholder="ex. Abonnement"></div>
+          <div class="field"><label>Montant (€)</label><input type="text" id="recExpAmount" placeholder="ex. 9,99"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Catégorie</label><select id="recExpCategory"></select></div>
+          <div class="field"><label>Fréquence</label>
+            <select id="recExpFreq"><option value="monthly">Chaque mois</option><option value="weekly">Chaque semaine</option></select>
+          </div>
+        </div>
+        <button class="solid-btn" id="btnAddRecExpense">Ajouter la récurrence</button>
+        <div class="msg" id="recExpMsg"></div>
+      </div>
+      <div id="recExpList"></div>
+      <div class="empty-note hidden" id="noRecExpNote">Aucune dépense récurrente.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Répartition du mois</h2></div>
+      <div class="donut-wrap" id="donutWrap"></div>
+      <div class="empty-note hidden" id="expChartEmpty">Pas encore de dépense ce mois-ci.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Détail des dépenses</h2></div>
+      <div class="card-head" style="margin-top:-6px;"><div class="hint">Change la catégorie directement depuis la liste.</div></div>
+      <div id="expList"></div>
+      <div class="empty-note hidden" id="noExpNote">Aucune dépense ce mois-ci.</div>
+    </div>
+  </div>
+
+  <div id="viewIncome" class="hidden">
+    <div class="hero inc">
+      <div class="label">Revenus ce mois-ci</div>
+      <div class="total" id="incTotal">—</div>
+      <div class="sub" id="incSub"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Ajouter un revenu</h2></div>
+      <div class="addbox" style="padding-top:2px;">
+        <div class="row2">
+          <div class="field"><label>Libellé</label><input type="text" id="incLabel" placeholder="ex. Alternance, bourse…"></div>
+          <div class="field"><label>Montant (€)</label><input type="text" id="incAmount" placeholder="ex. 350"></div>
+        </div>
+        <button class="solid-btn" id="btnAddIncome">Enregistrer</button>
+        <div class="msg" id="incMsg"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Revenus récurrents</h2></div>
+      <div class="addbox" style="padding-top:2px;">
+        <div class="row2">
+          <div class="field"><label>Libellé</label><input type="text" id="recIncLabel" placeholder="ex. Alternance"></div>
+          <div class="field"><label>Montant (€)</label><input type="text" id="recIncAmount" placeholder="ex. 700"></div>
+        </div>
+        <div class="field"><label>Fréquence</label>
+          <select id="recIncFreq"><option value="monthly">Chaque mois</option><option value="weekly">Chaque semaine</option></select>
+        </div>
+        <button class="solid-btn" id="btnAddRecIncome">Ajouter la récurrence</button>
+        <div class="msg" id="recIncMsg"></div>
+      </div>
+      <div id="recIncList"></div>
+      <div class="empty-note hidden" id="noRecIncNote">Aucun revenu récurrent.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Évolution des revenus</h2></div>
+      <div class="barchart" id="incBarChart"></div>
+      <div class="empty-note hidden" id="incChartEmpty">Ajoute un revenu pour voir la courbe.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Détail des revenus</h2></div>
+      <div id="incList"></div>
+      <div class="empty-note hidden" id="noIncNote">Aucun revenu ce mois-ci.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Sauvegarde manuelle</h2><button class="pill-btn" id="btnToggleBackup">Ouvrir</button></div>
+    <div class="card-head" style="margin-top:-6px;"><div class="hint">À utiliser si les données ne se conservent pas d'une visite à l'autre : copie ce texte quelque part, tu pourras le recoller pour tout restaurer.</div></div>
+    <div id="backupBox" class="addbox hidden">
+      <div class="field"><label>Exporter (copie ce texte)</label><textarea id="exportArea" rows="4" readonly></textarea></div>
+      <div class="backup-actions"><button class="solid-btn" id="btnCopyExport">Copier</button></div>
+      <div class="field" style="margin-top:16px;"><label>Importer (colle ici puis restaure)</label><textarea id="importArea" rows="4" placeholder="Colle ici une sauvegarde précédente"></textarea></div>
+      <div class="backup-actions"><button class="solid-btn" id="btnDoImport">Restaurer</button></div>
+      <div class="msg" id="backupMsg"></div>
+    </div>
+  </div>
+
+  <footer>
+    <span id="loadStatus">Chargement…</span>
+    <button id="btnReset">Réinitialiser</button>
+  </footer>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'lucas-budget-data';
+let state = { categories: [], expenses: [], incomes: [], recurringExpenses: [], recurringIncomes: [] };
+let view = 'expenses';
+
+function colorForCat(catId){
+  const idx = state.categories.findIndex(c => c.id === catId);
+  const i = idx < 0 ? 0 : idx;
+  const hue = (i * 47) % 360;
+  return 'hsl(' + hue + ',65%,48%)';
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function fmtEUR(n){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  return n.toLocaleString('fr-FR', {style:'currency', currency:'EUR', minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtMonth(m){
+  const [y,mo] = m.split('-');
+  const d = new Date(parseInt(y), parseInt(mo)-1, 1);
+  return d.toLocaleDateString('fr-FR', {month:'short', year:'2-digit'});
+}
+function parseFRNumber(str){
+  if(typeof str !== 'string') return NaN;
+  let s = str.trim().replace(/\s/g,'').replace(/€/g,'');
+  if(s.includes(',') && s.includes('.')){ s = s.replace(/\./g,'').replace(',', '.'); }
+  else if(s.includes(',')){ s = s.replace(',', '.'); }
+  return parseFloat(s);
+}
+function monthRange(start, end){
+  const res = [];
+  let [y,m] = start.split('-').map(Number);
+  const [ey,em] = end.split('-').map(Number);
+  let guard = 0;
+  while((y < ey || (y === ey && m <= em)) && guard < 600){
+    res.push(y + '-' + String(m).padStart(2,'0'));
+    m++; if(m > 12){ m = 1; y++; }
+    guard++;
+  }
+  return res;
+}
+
+async function storageGet(){
+  if(typeof window.storage !== 'undefined'){
+    try{ const r = await window.storage.get(STORAGE_KEY, false); return r ? r.value : null; }catch(e){ return null; }
+  }
+  try{ return localStorage.getItem(STORAGE_KEY); }catch(e){ return null; }
+}
+async function storageSet(value){
+  let ok = false;
+  if(typeof window.storage !== 'undefined'){
+    try{ ok = !!(await window.storage.set(STORAGE_KEY, value, false)); }catch(e){ ok = false; }
+  }
+  try{ localStorage.setItem(STORAGE_KEY, value); ok = true; }catch(e){}
+  return ok;
+}
+async function loadData(){
+  try{
+    const raw = await storageGet();
+    if(raw){
+      const parsed = JSON.parse(raw);
+      state.categories = parsed.categories || [];
+      state.expenses = parsed.expenses || [];
+      state.incomes = parsed.incomes || [];
+      state.recurringExpenses = parsed.recurringExpenses || [];
+      state.recurringIncomes = parsed.recurringIncomes || [];
+    }
+    document.getElementById('loadStatus').textContent = 'À jour';
+  }catch(e){
+    document.getElementById('loadStatus').textContent = 'Aucune donnée enregistrée';
+  }
+}
+async function saveData(){
+  const ok = await storageSet(JSON.stringify(state));
+  document.getElementById('loadStatus').textContent = ok ? 'Enregistré' : "Échec de l'enregistrement";
+}
+
+function armConfirm(btn, onConfirm){
+  if(btn.dataset.armed === '1'){
+    clearTimeout(parseInt(btn.dataset.timer));
+    onConfirm();
+    return;
+  }
+  btn.dataset.armed = '1';
+  const original = btn.textContent;
+  btn.textContent = 'Confirmer ?';
+  btn.classList.add('confirming');
+  const t = setTimeout(() => {
+    btn.dataset.armed = '0';
+    btn.textContent = original;
+    btn.classList.remove('confirming');
+  }, 3000);
+  btn.dataset.timer = String(t);
+}
+
+function currentMonth(){ return document.getElementById('monthPicker').value; }
+function expensesForMonth(m){ return state.expenses.filter(e => e.month === m); }
+function incomesForMonth(m){ return state.incomes.filter(i => i.month === m); }
+function categorySpent(catId, m){
+  return state.expenses.filter(e => e.categoryId === catId && e.month === m).reduce((s,e)=>s+e.amount,0);
+}
+
+function runRecurring(uptoMonth){
+  let changed = false;
+  state.recurringExpenses.forEach(r => {
+    monthRange(r.startMonth, uptoMonth).forEach(m => {
+      if(!r.generatedMonths.includes(m)){
+        if(r.frequency === 'monthly'){
+          state.expenses.push({ id: uid(), categoryId: r.categoryId, month: m, label: r.label, amount: r.amount, createdAt: Date.now(), recurringId: r.id });
+        } else {
+          for(let w=1; w<=4; w++){
+            state.expenses.push({ id: uid(), categoryId: r.categoryId, month: m, label: r.label + ' (sem. ' + w + ')', amount: r.amount, createdAt: Date.now(), recurringId: r.id });
+          }
+        }
+        r.generatedMonths.push(m);
+        changed = true;
+      }
+    });
+  });
+  state.recurringIncomes.forEach(r => {
+    monthRange(r.startMonth, uptoMonth).forEach(m => {
+      if(!r.generatedMonths.includes(m)){
+        if(r.frequency === 'monthly'){
+          state.incomes.push({ id: uid(), month: m, label: r.label, amount: r.amount, createdAt: Date.now(), recurringId: r.id });
+        } else {
+          for(let w=1; w<=4; w++){
+            state.incomes.push({ id: uid(), month: m, label: r.label + ' (sem. ' + w + ')', amount: r.amount, createdAt: Date.now(), recurringId: r.id });
+          }
+        }
+        r.generatedMonths.push(m);
+        changed = true;
+      }
+    });
+  });
+  return changed;
+}
+
+function render(){
+  document.querySelectorAll('#mainTabs button').forEach(b => b.classList.toggle('active', b.getAttribute('data-view')===view));
+  document.getElementById('viewExpenses').classList.toggle('hidden', view!=='expenses');
+  document.getElementById('viewIncome').classList.toggle('hidden', view!=='income');
+  renderCategorySelects();
+  if(view === 'expenses'){
+    renderExpenseHero(); renderCategories(); renderRecurringExpenses(); renderDonut(); renderExpenseList();
+  } else {
+    renderIncomeHero(); renderRecurringIncomes(); renderIncomeBars(); renderIncomeList();
+  }
+}
+
+function renderCategorySelects(){
+  ['expCategory','recExpCategory'].forEach(selId => {
+    const sel = document.getElementById(selId);
+    const prev = sel.value;
+    sel.innerHTML = '';
+    state.categories.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id; opt.textContent = c.name;
+      sel.appendChild(opt);
+    });
+    if(state.categories.some(c=>c.id===prev)) sel.value = prev;
+  });
+}
+
+function renderExpenseHero(){
+  const m = currentMonth();
+  const total = expensesForMonth(m).reduce((s,e)=>s+e.amount,0);
+  const budgetTotal = state.categories.reduce((s,c)=> s + (c.budget || 0), 0);
+  document.getElementById('expTotal').textContent = fmtEUR(total);
+  if(budgetTotal > 0){
+    const pct = Math.round((total/budgetTotal)*100);
+    document.getElementById('expSub').textContent = fmtEUR(total) + ' sur ' + fmtEUR(budgetTotal) + ' de budget (' + pct + '%)';
+  } else {
+    document.getElementById('expSub').textContent = 'Définis un budget par catégorie pour suivre ta progression';
+  }
+}
+
+function renderCategories(){
+  const m = currentMonth();
+  const wrap = document.getElementById('catList');
+  const note = document.getElementById('noCatNote');
+  wrap.innerHTML = '';
+  note.classList.toggle('hidden', state.categories.length > 0);
+  state.categories.forEach(c => {
+    const spent = categorySpent(c.id, m);
+    const budget = c.budget || 0;
+    const div = document.createElement('div');
+    div.className = 'cat-card';
+    let barHTML = '', noteHTML = '';
+    if(budget > 0){
+      const pct = (spent/budget)*100;
+      const cls = pct >= 100 ? 'over' : pct >= 80 ? 'warn' : 'ok';
+      barHTML = '<div class="bar-track"><div class="bar-fill ' + cls + '" style="width:' + Math.min(pct,100) + '%"></div></div>';
+      noteHTML = spent > budget
+        ? '<div class="cat-note over">Dépassement de ' + fmtEUR(spent-budget) + '</div>'
+        : '<div class="cat-note">Reste ' + fmtEUR(budget-spent) + '</div>';
+    } else {
+      noteHTML = '<div class="cat-note">Pas de budget défini</div>';
+    }
+    div.innerHTML =
+      '<div class="cat-top">' +
+        '<div class="cat-icon" style="background:' + colorForCat(c.id) + '">' + escapeHTML(c.name.slice(0,1).toUpperCase()) + '</div>' +
+        '<div class="cat-name">' + escapeHTML(c.name) + '</div>' +
+        '<div class="cat-figs"><strong>' + fmtEUR(spent) + '</strong>' + (budget>0 ? ' / ' + fmtEUR(budget) : '') + '</div>' +
+      '</div>' +
+      barHTML + noteHTML +
+      '<div class="cat-actions">' +
+        '<div class="budget-inline">Budget <input type="text" class="budget-input" data-id="' + c.id + '" value="' + (budget>0 ? budget : '') + '" placeholder="€"></div>' +
+        '<button class="cat-del" data-id="' + c.id + '">Supprimer</button>' +
+      '</div>';
+    wrap.appendChild(div);
+  });
+  wrap.querySelectorAll('.budget-input').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const cat = state.categories.find(c => c.id === inp.getAttribute('data-id'));
+      if(!cat) return;
+      if(inp.value.trim() === ''){ cat.budget = null; }
+      else{ const num = parseFRNumber(inp.value); cat.budget = isNaN(num) ? null : num; }
+      await saveData(); render();
+    });
+  });
+  wrap.querySelectorAll('.cat-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      armConfirm(btn, async () => {
+        const id = btn.getAttribute('data-id');
+        state.categories = state.categories.filter(c => c.id !== id);
+        state.expenses = state.expenses.filter(e => e.categoryId !== id);
+        state.recurringExpenses = state.recurringExpenses.filter(r => r.categoryId !== id);
+        await saveData(); render();
+      });
+    });
+  });
+}
+
+function renderRecurringExpenses(){
+  const wrap = document.getElementById('recExpList');
+  const note = document.getElementById('noRecExpNote');
+  wrap.innerHTML = '';
+  note.classList.toggle('hidden', state.recurringExpenses.length > 0);
+  state.recurringExpenses.forEach(r => {
+    const cat = state.categories.find(c => c.id === r.categoryId);
+    const row = document.createElement('div');
+    row.className = 'rec-row';
+    row.innerHTML =
+      '<span class="lbl">' + escapeHTML(r.label) + (cat ? ' · ' + escapeHTML(cat.name) : '') + '</span>' +
+      '<span class="freq">' + (r.frequency==='monthly' ? 'mensuel' : 'hebdo') + '</span>' +
+      '<span class="amt">' + fmtEUR(r.amount) + '</span>' +
+      '<button class="del" data-id="' + r.id + '">×</button>';
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('.del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      armConfirm(btn, async () => {
+        const id = btn.getAttribute('data-id');
+        state.recurringExpenses = state.recurringExpenses.filter(r => r.id !== id);
+        await saveData(); render();
+      });
+    });
+  });
+}
+
+function renderDonut(){
+  const m = currentMonth();
+  const wrap = document.getElementById('donutWrap');
+  const empty = document.getElementById('expChartEmpty');
+  const cats = state.categories.map(c => ({ c, v: categorySpent(c.id, m) })).filter(x => x.v > 0);
+  const total = cats.reduce((s,x)=>s+x.v,0);
+  if(cats.length === 0 || total <= 0){ wrap.classList.add('hidden'); empty.classList.remove('hidden'); return; }
+  wrap.classList.remove('hidden'); empty.classList.add('hidden');
+  let acc = 0;
+  const stops = cats.map(x => {
+    const start = (acc/total)*360; acc += x.v; const end = (acc/total)*360;
+    return colorForCat(x.c.id) + ' ' + start.toFixed(1) + 'deg ' + end.toFixed(1) + 'deg';
+  }).join(', ');
+  const legend = cats.slice().sort((a,b)=>b.v-a.v).map(x =>
+    '<div class="legend-row"><span class="legend-dot" style="background:' + colorForCat(x.c.id) + '"></span><span class="lname">' + escapeHTML(x.c.name) + '</span><span class="lval">' + fmtEUR(x.v) + '</span></div>'
+  ).join('');
+  wrap.innerHTML = '<div class="donut" style="background:conic-gradient(' + stops + ')"></div><div class="legend">' + legend + '</div>';
+}
+
+function renderExpenseList(){
+  const m = currentMonth();
+  const wrap = document.getElementById('expList');
+  const note = document.getElementById('noExpNote');
+  const list = expensesForMonth(m).slice().sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
+  wrap.innerHTML = '';
+  note.classList.toggle('hidden', list.length > 0);
+  list.forEach(e => {
+    const row = document.createElement('div');
+    row.className = 'txn-row';
+    const options = state.categories.map(c => '<option value="' + c.id + '"' + (c.id===e.categoryId?' selected':'') + '>' + escapeHTML(c.name) + '</option>').join('');
+    row.innerHTML =
+      '<select class="cat-reassign" data-id="' + e.id + '" style="background:' + colorForCat(e.categoryId) + '">' + options + '</select>' +
+      '<span class="lbl">' + escapeHTML(e.label || '') + '</span>' +
+      '<span class="amt">' + fmtEUR(e.amount) + '</span>' +
+      '<button class="del" data-id="' + e.id + '">×</button>';
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('.cat-reassign').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      const exp = state.expenses.find(e => e.id === sel.getAttribute('data-id'));
+      if(!exp) return;
+      exp.categoryId = sel.value;
+      await saveData(); render();
+    });
+  });
+  wrap.querySelectorAll('.del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      armConfirm(btn, async () => {
+        state.expenses = state.expenses.filter(e => e.id !== btn.getAttribute('data-id'));
+        await saveData(); render();
+      });
+    });
+  });
+}
+
+function renderIncomeHero(){
+  const m = currentMonth();
+  const total = incomesForMonth(m).reduce((s,i)=>s+i.amount,0);
+  const expTotal = expensesForMonth(m).reduce((s,e)=>s+e.amount,0);
+  document.getElementById('incTotal').textContent = fmtEUR(total);
+  document.getElementById('incSub').textContent = total > 0 ? 'Solde du mois : ' + fmtEUR(total - expTotal) : 'Ajoute tes revenus du mois';
+}
+
+function renderRecurringIncomes(){
+  const wrap = document.getElementById('recIncList');
+  const note = document.getElementById('noRecIncNote');
+  wrap.innerHTML = '';
+  note.classList.toggle('hidden', state.recurringIncomes.length > 0);
+  state.recurringIncomes.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'rec-row';
+    row.innerHTML =
+      '<span class="lbl">' + escapeHTML(r.label) + '</span>' +
+      '<span class="freq">' + (r.frequency==='monthly' ? 'mensuel' : 'hebdo') + '</span>' +
+      '<span class="amt">' + fmtEUR(r.amount) + '</span>' +
+      '<button class="del" data-id="' + r.id + '">×</button>';
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('.del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      armConfirm(btn, async () => {
+        const id = btn.getAttribute('data-id');
+        state.recurringIncomes = state.recurringIncomes.filter(r => r.id !== id);
+        await saveData(); render();
+      });
+    });
+  });
+}
+
+function renderIncomeBars(){
+  const months = Array.from(new Set(state.incomes.map(i => i.month))).sort();
+  const wrap = document.getElementById('incBarChart');
+  const empty = document.getElementById('incChartEmpty');
+  if(months.length === 0){ wrap.classList.add('hidden'); empty.classList.remove('hidden'); return; }
+  wrap.classList.remove('hidden'); empty.classList.add('hidden');
+  const values = months.map(m => incomesForMonth(m).reduce((s,i)=>s+i.amount,0));
+  const max = Math.max(...values, 1);
+  wrap.innerHTML = months.map((m,idx) => {
+    const h = Math.max((values[idx]/max)*100, 4);
+    return '<div class="col"><div class="bar" style="height:' + h + '%" title="' + fmtEUR(values[idx]) + '"></div><div class="colabel">' + fmtMonth(m) + '</div></div>';
+  }).join('');
+}
+
+function renderIncomeList(){
+  const m = currentMonth();
+  const wrap = document.getElementById('incList');
+  const note = document.getElementById('noIncNote');
+  const list = incomesForMonth(m);
+  wrap.innerHTML = '';
+  note.classList.toggle('hidden', list.length > 0);
+  list.forEach(i => {
+    const row = document.createElement('div');
+    row.className = 'txn-row';
+    row.innerHTML =
+      '<span class="lbl">' + escapeHTML(i.label || '') + '</span>' +
+      '<span class="amt">' + fmtEUR(i.amount) + '</span>' +
+      '<button class="del" data-id="' + i.id + '">×</button>';
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('.del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      armConfirm(btn, async () => {
+        state.incomes = state.incomes.filter(i => i.id !== btn.getAttribute('data-id'));
+        await saveData(); render();
+      });
+    });
+  });
+}
+
+function escapeHTML(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+document.getElementById('mainTabs').addEventListener('click', e => {
+  if(e.target.tagName !== 'BUTTON') return;
+  view = e.target.getAttribute('data-view');
+  render();
+});
+document.getElementById('monthPicker').addEventListener('change', async () => {
+  const changed = runRecurring(currentMonth());
+  if(changed) await saveData();
+  render();
+});
+
+document.getElementById('btnToggleAddCat').addEventListener('click', () => {
+  document.getElementById('addCatBox').classList.toggle('hidden');
+});
+document.getElementById('btnCreateCat').addEventListener('click', async () => {
+  const name = document.getElementById('newCatName').value.trim();
+  const budgetRaw = document.getElementById('newCatBudget').value.trim();
+  const msg = document.getElementById('addCatMsg');
+  if(!name){ msg.textContent = 'Indique un nom.'; msg.className = 'msg err'; return; }
+  const budget = budgetRaw ? parseFRNumber(budgetRaw) : null;
+  state.categories.push({ id: uid(), name, budget: (budget===null||isNaN(budget)) ? null : budget });
+  await saveData();
+  document.getElementById('newCatName').value = '';
+  document.getElementById('newCatBudget').value = '';
+  msg.textContent = 'Catégorie créée.'; msg.className = 'msg ok';
+  render();
+});
+
+document.getElementById('btnAddExpense').addEventListener('click', async () => {
+  const categoryId = document.getElementById('expCategory').value;
+  const label = document.getElementById('expLabel').value.trim();
+  const rawVal = document.getElementById('expAmount').value;
+  const msg = document.getElementById('expMsg');
+  if(!categoryId){ msg.textContent = "Crée d'abord une catégorie."; msg.className = 'msg err'; return; }
+  const val = parseFRNumber(rawVal);
+  if(isNaN(val)){ msg.textContent = 'Montant invalide.'; msg.className = 'msg err'; return; }
+  state.expenses.push({ id: uid(), categoryId, month: currentMonth(), label, amount: val, createdAt: Date.now() });
+  await saveData();
+  document.getElementById('expLabel').value = '';
+  document.getElementById('expAmount').value = '';
+  msg.textContent = 'Dépense ajoutée.'; msg.className = 'msg ok';
+  render();
+});
+
+document.getElementById('btnAddRecExpense').addEventListener('click', async () => {
+  const categoryId = document.getElementById('recExpCategory').value;
+  const label = document.getElementById('recExpLabel').value.trim();
+  const rawVal = document.getElementById('recExpAmount').value;
+  const freq = document.getElementById('recExpFreq').value;
+  const msg = document.getElementById('recExpMsg');
+  if(!categoryId){ msg.textContent = "Crée d'abord une catégorie."; msg.className = 'msg err'; return; }
+  if(!label){ msg.textContent = 'Indique un libellé.'; msg.className = 'msg err'; return; }
+  const val = parseFRNumber(rawVal);
+  if(isNaN(val)){ msg.textContent = 'Montant invalide.'; msg.className = 'msg err'; return; }
+  state.recurringExpenses.push({ id: uid(), categoryId, label, amount: val, frequency: freq, startMonth: currentMonth(), generatedMonths: [] });
+  runRecurring(currentMonth());
+  await saveData();
+  document.getElementById('recExpLabel').value = '';
+  document.getElementById('recExpAmount').value = '';
+  msg.textContent = 'Récurrence créée.'; msg.className = 'msg ok';
+  render();
+});
+
+document.getElementById('btnAddIncome').addEventListener('click', async () => {
+  const label = document.getElementById('incLabel').value.trim();
+  const rawVal = document.getElementById('incAmount').value;
+  const msg = document.getElementById('incMsg');
+  const val = parseFRNumber(rawVal);
+  if(isNaN(val)){ msg.textContent = 'Montant invalide.'; msg.className = 'msg err'; return; }
+  state.incomes.push({ id: uid(), month: currentMonth(), label, amount: val, createdAt: Date.now() });
+  await saveData();
+  document.getElementById('incLabel').value = '';
+  document.getElementById('incAmount').value = '';
+  msg.textContent = 'Revenu ajouté.'; msg.className = 'msg ok';
+  render();
+});
+
+document.getElementById('btnAddRecIncome').addEventListener('click', async () => {
+  const label = document.getElementById('recIncLabel').value.trim();
+  const rawVal = document.getElementById('recIncAmount').value;
+  const freq = document.getElementById('recIncFreq').value;
+  const msg = document.getElementById('recIncMsg');
+  if(!label){ msg.textContent = 'Indique un libellé.'; msg.className = 'msg err'; return; }
+  const val = parseFRNumber(rawVal);
+  if(isNaN(val)){ msg.textContent = 'Montant invalide.'; msg.className = 'msg err'; return; }
+  state.recurringIncomes.push({ id: uid(), label, amount: val, frequency: freq, startMonth: currentMonth(), generatedMonths: [] });
+  runRecurring(currentMonth());
+  await saveData();
+  document.getElementById('recIncLabel').value = '';
+  document.getElementById('recIncAmount').value = '';
+  msg.textContent = 'Récurrence créée.'; msg.className = 'msg ok';
+  render();
+});
+
+document.getElementById('btnToggleBackup').addEventListener('click', () => {
+  const box = document.getElementById('backupBox');
+  box.classList.toggle('hidden');
+  if(!box.classList.contains('hidden')){
+    document.getElementById('exportArea').value = JSON.stringify(state);
+  }
+});
+document.getElementById('btnCopyExport').addEventListener('click', async () => {
+  const area = document.getElementById('exportArea');
+  const msg = document.getElementById('backupMsg');
+  area.select();
+  try{
+    await navigator.clipboard.writeText(area.value);
+    msg.textContent = 'Copié dans le presse-papiers.'; msg.className = 'msg ok';
+  }catch(e){
+    msg.textContent = 'Copie automatique indisponible : le texte est sélectionné, copie-le manuellement.'; msg.className = 'msg err';
+  }
+});
+document.getElementById('btnDoImport').addEventListener('click', async () => {
+  const msg = document.getElementById('backupMsg');
+  const raw = document.getElementById('importArea').value.trim();
+  if(!raw){ msg.textContent = 'Colle une sauvegarde à restaurer.'; msg.className = 'msg err'; return; }
+  try{
+    const parsed = JSON.parse(raw);
+    state = {
+      categories: parsed.categories || [],
+      expenses: parsed.expenses || [],
+      incomes: parsed.incomes || [],
+      recurringExpenses: parsed.recurringExpenses || [],
+      recurringIncomes: parsed.recurringIncomes || []
+    };
+    await saveData();
+    msg.textContent = 'Données restaurées.'; msg.className = 'msg ok';
+    render();
+  }catch(e){
+    msg.textContent = 'Ce texte ne ressemble pas à une sauvegarde valide.'; msg.className = 'msg err';
+  }
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  const btn = document.getElementById('btnReset');
+  armConfirm(btn, async () => {
+    state = { categories: [], expenses: [], incomes: [], recurringExpenses: [], recurringIncomes: [] };
+    await saveData();
+    render();
+  });
+});
+
+function seedSeptemberIfEmpty(){
+  if(state.categories.length > 0 || state.expenses.length > 0) return;
+  const cats = ['Courses','Transports','Sorties','Bien-être','Entretien','Cadeaux','Divers']
+    .map(name => ({ id: uid(), name, budget: null }));
+  state.categories = cats;
+  const byName = n => cats.find(c => c.name === n).id;
+  const M = '2026-09';
+  const rows = [
+    ['Courses','Courses semaine 1',13.58], ['Courses','Courses semaine 2',31.40],
+    ['Courses','Courses semaine 3',49.82], ['Courses','Courses',11.32],
+    ['Transports','Louise aller',14.49], ['Transports','Métro Toulouse',7.40],
+    ['Transports','Transports',1.90], ['Transports','Transports Bordeaux',8.80],
+    ['Transports','Louise retour',19.49],
+    ['Sorties','Food truck',7], ['Sorties','Bar',4], ['Sorties','Café',0.60],
+    ['Sorties','Apéro Louise',12], ['Sorties','Bar',6.30], ['Sorties','Bar',8.50],
+    ['Sorties','Bk',7.95], ['Sorties','V and B',8], ['Sorties','Bk',11.40],
+    ['Sorties','Bar Bordeaux',9.50], ['Sorties','Soirée Nicolas',6], ['Sorties','Œnologie soirée',9],
+    ['Bien-être','Coiffeur',18],
+    ['Entretien','Lessive',5.50], ['Entretien','Lessive séchage',3],
+    ['Cadeaux','Anniv Mathis',5],
+    ['Divers','Divers',7]
+  ];
+  rows.forEach((r,idx) => {
+    state.expenses.push({ id: uid(), categoryId: byName(r[0]), month: M, label: r[1], amount: r[2], createdAt: idx });
+  });
+}
+
+(async function init(){
+  const nowMonth = new Date().toISOString().slice(0,7);
+  document.getElementById('monthPicker').value = nowMonth;
+  await loadData();
+  seedSeptemberIfEmpty();
+  const changed = runRecurring(nowMonth);
+  await saveData();
+  render();
+})();
+</script>
+</body>
+</html>
